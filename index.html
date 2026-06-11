@@ -6,7 +6,7 @@
 <title>みなのは360°ギャラリー</title>
 
 <meta property="og:title" content="みなのは360°ギャラリー" />
-<meta property="og:description" content="360度パノラマで楽しむバーチャル展示会です。" />
+<meta property="og:description" content="360度パノラマでみなのはを見ることができます。" />
 <meta property="og:image" content="https://tzumd2022.github.io/minano-360/title/title.png" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -155,7 +155,8 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:
   justify-content:center;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.4s ease, visibility 0.4s ease;
+  /* ✨ チラつき防止のため、開く時のアニメーション時間を超高速（0.1s）に変更 ✨ */
+  transition: opacity 0.1s ease, visibility 0.1s ease;
 }
 #galleryOverlay.open{ opacity: 1; visibility: visible; }
 
@@ -260,7 +261,7 @@ const GALLERIES = {
   gallery02:{ 
     dir:"gallery/gallery02", 
     captions: [
-      "お菓子を食べることができてお菓子づくりもできますよ",
+      "お菓子を食べることができてお菓子づくりもできます",
       "こどもたちと作ったお好み焼き(5/25)",
       "こどもたちと作ったピザ(5/25)",
       "いろいろな料理にも挑戦できます"
@@ -290,7 +291,7 @@ const GALLERIES = {
   },
   gallery08:{ 
     dir:"gallery/gallery08", 
-    captions: ["制作で自由にのびのび使えるツールや材料", "幅広く制作活動ができます", "自然の恵みや普段捨てるものも"]
+    captions: ["制作で自由にのびのび使えるツールや材料", "幅広く制作活動ができます", "自然の恵みや普段捨てるものも使えます"]
   },
   gallery09:{ 
     dir:"gallery/gallery09", 
@@ -325,17 +326,31 @@ function preloadGalleryImages(galleryId) {
   }
 }
 
+// ✨ 【最重要修正】残像バグを完全に葬り去る関数
 function openGallery(galleryId){
-  // ✨ 【修正】新しく開く直前に、前の残像を消すために画像URLと説明を一度空っぽにする
+  // 1️⃣ 【徹底排除】まずは画面外枠自体を一度完全に初期化（非表示）状態に戻し、残像を描画させる隙を与えない
+  overlay.style.transition = "none"; // アニメーションを一時オフ
+  overlay.classList.remove("open");
+  
+  // 2️⃣ 【完全リセット】画像とキャプションを空っぽにする
   img.src = "";
   caption.textContent = "";
   caption.style.display = "none";
 
+  // 3️⃣ 【データロード】新しいデータを準備
   currentGallery = galleryId;
   currentIndex   = 0;
   preloadGalleryImages(galleryId); 
   showImage();
-  overlay.classList.add("open");
+
+  // 4️⃣ 【強制再描画】ブラウザに「画面を一度真っ白に直して！」と強制命令を送る（これが秘訣）
+  void overlay.offsetWidth; 
+
+  // 5️⃣ 【最速表示】データが整った状態で、一瞬（0.01秒後）にポップアップを開く
+  setTimeout(() => {
+    overlay.style.transition = ""; // アニメーションをオンに戻す
+    overlay.classList.add("open");
+  }, 10); 
 }
 
 function showImage(){
@@ -375,8 +390,8 @@ function closeGallery(){
   overlay.classList.remove("open"); 
   currentGallery = null; 
   preloadedImages = []; 
-  // ✨ 【修正】閉じた瞬間にも念のため画像を空っぽにしておく
-  setTimeout(() => { img.src = ""; }, 400); 
+  // ✨ 閉じた直後に画像を空にして、次の描画に備える
+  setTimeout(() => { img.src = ""; }, 100); 
 }
 function galleryPrev(){ if(currentGallery && currentIndex > 0){ currentIndex--; showImage(); } }
 function galleryNext(){
