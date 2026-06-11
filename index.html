@@ -195,8 +195,18 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:
 .galleryDot{ width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; }
 .galleryDot.active{ background: #fff; transform: scale(1.3); }
 
-#galleryImgWrap{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-#galleryImg{ max-width:92vw; max-height:76vh; object-fit:contain; border-radius:6px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); }
+#galleryImgWrap{ 
+  width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden; 
+  /* ✨ CSSによるグラフィック加速の追加（ラグ軽減） ✨ */
+  will-change: transform;
+  transform: translateZ(0);
+}
+#galleryImg{ 
+  max-width:92vw; max-height:76vh; object-fit:contain; border-radius:6px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); 
+  /* ✨ 画像自体の滑らかな切り替えとGPUの最適化 ✨ */
+  will-change: opacity;
+  backface-visibility: hidden;
+}
 
 #galleryClose{
   position:absolute; top:20px; right:24px; background:rgba(255,255,255,0.15); color:white;
@@ -236,10 +246,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:
 <script>
 /* =====================================================
    ギャラリーデータ定義 ＆ 個別キャプション設定
-   ===================================================== 
-   ※ captionsの中に各画像の枚数分の説明テキストを記述してください。
-   ※ 文字を空「""」にすると、その画像の時は説明欄自体が隠れます。
-*/
+   ===================================================== */
 const GALLERIES = {
   gallery01:{ 
     dir:"gallery/gallery01", 
@@ -295,6 +302,8 @@ const GALLERIES = {
 
 let currentGallery = null;
 let currentIndex   = 0;
+// ✨ プリロードされた画像をキャッシュ保持する配列
+let preloadedImages = [];
 
 const overlay       = document.getElementById("galleryOverlay");
 const dotsContainer = document.getElementById("galleryDots");
@@ -304,28 +313,43 @@ const btnClose      = document.getElementById("galleryClose");
 const btnPrev       = document.getElementById("galleryPrev");
 const btnNext       = document.getElementById("galleryNext");
 
+// ✨ ギャラリーを開いた瞬間に、そのフォルダの全画像を裏で超高速ロードする関数
+function preloadGalleryImages(galleryId) {
+  preloadedImages = [];
+  const g = GALLERIES[galleryId];
+  for (let i = 0; i < g.captions.length; i++) {
+    const num = String(i + 1).padStart(2, "0");
+    const pImg = new Image();
+    pImg.src = `${g.dir}/${num}.jpg`;
+    preloadedImages.push(pImg); // メモリ上に強制保持させてロード完了させる
+  }
+}
+
 function openGallery(galleryId){
   currentGallery = galleryId;
   currentIndex   = 0;
+  preloadGalleryImages(galleryId); // ✨ 開いた瞬間に全自動プリロード発動！
   showImage();
   overlay.classList.add("open");
 }
 
 function showImage(){
   const g     = GALLERIES[currentGallery];
-  const total = g.captions.length; // 個数から自動カウント
+  const total = g.captions.length;
   const idx   = currentIndex;
   const num   = String(idx + 1).padStart(2,"0");
+  
+  // ✨ すでに裏で読み込み済みの画像パスを瞬時に適用（ラグなし）
   img.src     = `${g.dir}/${num}.jpg`;
   
   // 個別キャプションの表示制御
   const text = g.captions[idx];
   if (text && text.trim() !== "") {
     caption.textContent = text;
-    caption.style.display = "block"; // 文字があれば表示
+    caption.style.display = "block";
   } else {
     caption.textContent = "";
-    caption.style.display = "none";  // 空っぽならエリアごと非表示
+    caption.style.display = "none";
   }
   
   dotsContainer.innerHTML = "";
@@ -344,7 +368,11 @@ function showImage(){
   btnNext.style.visibility = idx < total - 1 ? "visible" : "hidden";
 }
 
-function closeGallery(){ overlay.classList.remove("open"); currentGallery = null; }
+function closeGallery(){ 
+  overlay.classList.remove("open"); 
+  currentGallery = null; 
+  preloadedImages = []; // ✨ メモリ解放
+}
 function galleryPrev(){ if(currentGallery && currentIndex > 0){ currentIndex--; showImage(); } }
 function galleryNext(){
   if(currentGallery){
@@ -419,38 +447,4 @@ const viewer = pannellum.viewer('panorama',{
     },
     roomA1:{
       type:"equirectangular",
-      panorama:"https://tzumd2022.github.io/minano-360/images/04_roomA_2.jpg",
-      yaw:-170, pitch:0, hfov:100,
-      hotSpots:[
-        { pitch:-15, yaw:-40, type:"scene", sceneId:"roomA2", targetYaw:-100, createTooltipFunc:createNavButton, createTooltipArgs:{label:"てまえにもどる"} },
-        { pitch:-5, yaw:40, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery02"} },
-        { pitch:-10, yaw:150, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery03"} },
-        { pitch:-20, yaw:-110, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery04"} }
-      ]
-    },
-    roomB:{
-      type:"equirectangular",
-      panorama:"https://tzumd2022.github.io/minano-360/images/05_roomB.jpg",
-      yaw:150, pitch:-5, hfov:100,
-      hotSpots:[
-        { pitch:-25, yaw:-50, type:"scene", sceneId:"hallway", createTooltipFunc:createNavButton, createTooltipArgs:{label:"ろうか"} },
-        { pitch:-15, yaw:0, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery08"} },
-        { pitch:-5, yaw:150, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery09"} },
-        { pitch:-5, yaw:-90, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery10"} }
-      ]
-    }
-  }
-});
-
-/* =====================================================
-   スタート画面非表示ロジックのみ
-   ===================================================== */
-document.getElementById("startButton").addEventListener("click", ()=>{
-  const startScreen = document.getElementById("startScreen");
-  startScreen.style.opacity = "0";
-  startScreen.style.pointerEvents = "none";
-  setTimeout(() => { startScreen.style.visibility = "hidden"; }, 800);
-});
-</script>
-</body>
-</html>
+      panorama:"
