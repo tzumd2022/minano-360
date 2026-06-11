@@ -7,6 +7,7 @@
 
 <meta property="og:title" content="みなのは360°ギャラリー" />
 <meta property="og:description" content="360度パノラマで楽しむバーチャル展示会です。" />
+<meta property="og:image" content="https://tzumd2022.github.io/minano-360/title/title.png" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
 
@@ -173,12 +174,12 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:
   line-height: 1.5;
   letter-spacing: 0.5px;
   text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-  background: rgba(0, 0, 0, 0.6); /* 少し濃くして文字を読みやすく */
+  background: rgba(0, 0, 0, 0.6);
   padding: 10px 18px;
   border-radius: 8px;
   pointer-events: none;
   z-index: 10002;
-  display: none; /* 初期状態は非表示（文字が入るとJavaScriptで開く） */
+  display: none;
 }
 
 #galleryControlArea{
@@ -197,13 +198,13 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:
 
 #galleryImgWrap{ 
   width:100%; height:100%; display:flex; align-items:center; justify-content:center; overflow:hidden; 
-  /* ✨ CSSによるグラフィック加速の追加（ラグ軽減） ✨ */
+  /* CSSによるグラフィック加速の追加（ラグ軽減） */
   will-change: transform;
   transform: translateZ(0);
 }
 #galleryImg{ 
   max-width:92vw; max-height:76vh; object-fit:contain; border-radius:6px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); 
-  /* ✨ 画像自体の滑らかな切り替えとGPUの最適化 ✨ */
+  /* 画像自体の滑らかな切り替えとGPUの最適化 */
   will-change: opacity;
   backface-visibility: hidden;
 }
@@ -302,7 +303,7 @@ const GALLERIES = {
 
 let currentGallery = null;
 let currentIndex   = 0;
-// ✨ プリロードされた画像をキャッシュ保持する配列
+// プリロードされた画像をキャッシュ保持する配列
 let preloadedImages = [];
 
 const overlay       = document.getElementById("galleryOverlay");
@@ -313,7 +314,7 @@ const btnClose      = document.getElementById("galleryClose");
 const btnPrev       = document.getElementById("galleryPrev");
 const btnNext       = document.getElementById("galleryNext");
 
-// ✨ ギャラリーを開いた瞬間に、そのフォルダの全画像を裏で超高速ロードする関数
+// ギャラリーを開いた瞬間に、そのフォルダの全画像を裏で超高速ロードする関数
 function preloadGalleryImages(galleryId) {
   preloadedImages = [];
   const g = GALLERIES[galleryId];
@@ -328,7 +329,7 @@ function preloadGalleryImages(galleryId) {
 function openGallery(galleryId){
   currentGallery = galleryId;
   currentIndex   = 0;
-  preloadGalleryImages(galleryId); // ✨ 開いた瞬間に全自動プリロード発動！
+  preloadGalleryImages(galleryId); // 開いた瞬間に全自動プリロード発動！
   showImage();
   overlay.classList.add("open");
 }
@@ -339,7 +340,7 @@ function showImage(){
   const idx   = currentIndex;
   const num   = String(idx + 1).padStart(2,"0");
   
-  // ✨ すでに裏で読み込み済みの画像パスを瞬時に適用（ラグなし）
+  // すでに裏で読み込み済みの画像パスを瞬時に適用（ラグなし）
   img.src     = `${g.dir}/${num}.jpg`;
   
   // 個別キャプションの表示制御
@@ -371,7 +372,7 @@ function showImage(){
 function closeGallery(){ 
   overlay.classList.remove("open"); 
   currentGallery = null; 
-  preloadedImages = []; // ✨ メモリ解放
+  preloadedImages = []; // メモリ解放
 }
 function galleryPrev(){ if(currentGallery && currentIndex > 0){ currentIndex--; showImage(); } }
 function galleryNext(){
@@ -447,4 +448,38 @@ const viewer = pannellum.viewer('panorama',{
     },
     roomA1:{
       type:"equirectangular",
-      panorama:"
+      panorama:"https://tzumd2022.github.io/minano-360/images/04_roomA_2.jpg",
+      yaw:-170, pitch:0, hfov:100,
+      hotSpots:[
+        { pitch:-15, yaw:-40, type:"scene", sceneId:"roomA2", targetYaw:-100, createTooltipFunc:createNavButton, createTooltipArgs:{label:"てまえにもどる"} },
+        { pitch:-5, yaw:40, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery02"} },
+        { pitch:-10, yaw:150, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery03"} },
+        { pitch:-20, yaw:-110, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery04"} }
+      ]
+    },
+    roomB:{
+      type:"equirectangular",
+      panorama:"https://tzumd2022.github.io/minano-360/images/05_roomB.jpg",
+      yaw:150, pitch:-5, hfov:100,
+      hotSpots:[
+        { pitch:-25, yaw:-50, type:"scene", sceneId:"hallway", createTooltipFunc:createNavButton, createTooltipArgs:{label:"ろうか"} },
+        { pitch:-15, yaw:0, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery08"} },
+        { pitch:-5, yaw:150, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery09"} },
+        { pitch:-5, yaw:-90, type:"info", createTooltipFunc:createGalleryPoint, createTooltipArgs:{galleryId:"gallery10"} }
+      ]
+    }
+  }
+});
+
+/* =====================================================
+   スタート画面非表示ロジックのみ
+   ===================================================== */
+document.getElementById("startButton").addEventListener("click", ()=>{
+  const startScreen = document.getElementById("startScreen");
+  startScreen.style.opacity = "0";
+  startScreen.style.pointerEvents = "none";
+  setTimeout(() => { startScreen.style.visibility = "hidden"; }, 800);
+});
+</script>
+</body>
+</html>
